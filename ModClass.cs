@@ -19,6 +19,7 @@ namespace MyFirstMod
         private string framesDirectoryPath;
         private int frameCount = 0;
         private string sessionTimestamp;
+      
 
         // Performance settings
         private int targetWidth = 640;
@@ -68,22 +69,39 @@ namespace MyFirstMod
         {
             string header = "frame_id,x_position,y_position,health," +
                           "moving_left,moving_right,moving_up,moving_down," +
-                          "attacking,jumping,dashing,focusing";
+                          "attacking,jumping,dashing,focusing,dreamnail";
             File.WriteAllText(csvFilePath, header + "\n");
         }
 
         public void OnHeroUpdate()
         {
+            //List<string> pressedButtons = new List<string>();
+            //for (int i = 0; i <= 19; i++)
+            //{
+            //    if (Input.GetKey((KeyCode)(350 + i))) // Joystick1Button0 = 350
+            //    {
+            //        pressedButtons.Add($"Button{i}");
+            //    }
+            //}
+            //if (pressedButtons.Count > 0)
+            //{
+            //    Log($"Pressed: {string.Join(", ", pressedButtons)}");
+            //}
+
+
+
             // Toggle recording with O key
             if (Input.GetKeyDown(KeyCode.O))
             {
-                isRecording = !isRecording;
-                Log($"Recording {(isRecording ? "started" : "stopped")}");
-
-                if (!isRecording && dataBuffer.Count > 0)
+                if (!isRecording)
                 {
-                    SaveBufferedData();
-                    Log($"Session saved! Frames: {framesDirectoryPath}");
+                    // Start new recording session
+                    StartNewSession();
+                }
+                else
+                {
+                    // Stop current recording session
+                    StopCurrentSession();
                 }
             }
 
@@ -98,6 +116,45 @@ namespace MyFirstMod
                     recordingTimer = 0f;
                 }
             }
+        }
+
+        private void StartNewSession()
+        {
+       
+            frameCount = 0; // Reset frame count for new session
+
+            // Create unique paths for this session
+            string currentTimestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            csvFilePath = Path.Combine(saveDirectory, $"hk_actions_session_{currentTimestamp}.csv");
+            framesDirectoryPath = Path.Combine(saveDirectory, $"frames_session_{currentTimestamp}");
+
+            // Create frames directory for this session
+            if (!Directory.Exists(framesDirectoryPath))
+            {
+                Directory.CreateDirectory(framesDirectoryPath);
+                Log($"Created frames directory: {framesDirectoryPath}");
+            }
+
+            // Write CSV header for this session
+            WriteCSVHeader();
+
+            isRecording = true;
+            Log($"Recording session started!");
+        }
+
+        private void StopCurrentSession()
+        {
+            isRecording = false;
+
+            // Save any remaining buffered data
+            if (dataBuffer.Count > 0)
+            {
+                SaveBufferedData();
+            }
+
+            Log($"Recording session stopped!");
+            Log($"CSV: {Path.GetFileName(csvFilePath)}");
+            Log($"Frames: {Path.GetFileName(framesDirectoryPath)}");
         }
 
         private void CapturePlayerData()
@@ -126,14 +183,14 @@ namespace MyFirstMod
                 // Combat inputs
                 bool attacking = Input.GetKey(KeyCode.Joystick1Button0);
                 bool jumping = Input.GetKey(KeyCode.Joystick1Button1);
-                bool focusing = Input.GetKey(KeyCode.Joystick1Button2);
-                bool dreamnail = Input.GetKey(KeyCode.Joystick1Button3);
-                //bool dashing = fix later
+                bool dreamnail = Input.GetKey(KeyCode.Joystick1Button2);
+                bool focusing = Input.GetKey(KeyCode.Joystick1Button3);
+                bool dashing = Input.GetKey(KeyCode.Joystick1Button7);
 
                 // Create CSV row
                 string dataRow = $"{frameCount},{xPos:F3},{yPos:F3},{health}," +
                                $"{movingLeft},{movingRight},{movingUp},{movingDown}," +
-                               $"{attacking},{jumping},{dashing},{focusing}";
+                               $"{attacking},{jumping},{dashing},{focusing},{dreamnail}";
 
                 // Add to buffer
                 dataBuffer.Add(dataRow);
@@ -258,5 +315,11 @@ namespace MyFirstMod
                 Log($"Attempted path: {csvFilePath}");
             }
         }
+
+        // DEBUG: Uncomment this block to see which buttons you're pressing
+        /*
+      
+        
+        */
     }
 }
